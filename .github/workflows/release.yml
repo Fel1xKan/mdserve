@@ -45,16 +45,25 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # 显式确认六个平台都在，避免 goos/goarch 漏配后静默发一个残缺 release。
+      # 直接查 release 上的资产：dist/ 里的布局由 goreleaser 决定，
+      # 用户拿到的却是 release 附件，校验后者才有意义。
       - name: 校验产物
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          ls -la dist
-          platforms="linux-amd64 linux-arm64 darwin-amd64 darwin-arm64"
-          platforms="$platforms windows-amd64 windows-arm64"
-          for platform in $platforms; do
-            if ! ls dist/mdserve-*-"$platform"* >/dev/null 2>&1; then
-              echo "::error::缺少 $platform 产物"
+          version="${GITHUB_REF_NAME#v}"
+          assets=$(gh release view "$GITHUB_REF_NAME" --json assets -q '.assets[].name')
+          echo "$assets"
+          for platform in linux-amd64 linux-arm64 darwin-amd64 darwin-arm64 \
+                          windows-amd64.exe windows-arm64.exe; do
+            name="mdserve-${version}-${platform}"
+            if ! grep -qx "$name" <<< "$assets"; then
+              echo "::error::缺少 $name"
               exit 1
             fi
           done
+          if ! grep -qx checksums.txt <<< "$assets"; then
+            echo "::error::缺少 checksums.txt"
+            exit 1
+          fi
