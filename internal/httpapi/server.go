@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Fel1xKan/mdserve/internal/auth"
@@ -55,6 +56,10 @@ type Server struct {
 	opt  Options
 	base string
 	log  *slog.Logger
+
+	// 未知 Host 的告警去重。Host 头由请求方控制，不设上限会把日志冲掉。
+	unknownMu sync.Mutex
+	unknown   map[string]struct{}
 }
 
 // New 解析模板并准备静态资源处理器。
@@ -145,6 +150,7 @@ func (s *Server) mountFor(r *http.Request) (*site.Mount, *auth.Scope, bool) {
 	host := auth.RequestHost(r)
 	m := s.reg.Lookup(host)
 	if m == nil {
+		s.noteUnknownHost(host)
 		return nil, nil, false
 	}
 	sc, ok := s.auth.For(host)
@@ -152,6 +158,32 @@ func (s *Server) mountFor(r *http.Request) (*site.Mount, *auth.Scope, bool) {
 		return nil, nil, false
 	}
 	return m, sc, true
+}
+
+// unknownHostLogLimit 是未知 Host 告警的条数上限。
+const unknownHostLogLimit = 16
+
+// noteUnknownHost 为每个未知 Host 记一次警告。它多半意味着用户改过域名，
+// 而 Cloudflare 上的旧记录还在把流量送过来；不重复记，也不回显给访客。
+func (s *Server) noteUnknownHost(host string) {
+	if host == "" {
+		return
+	}
+	s.unknownMu.Lock()
+	defer s.unknownMu.Unlock()
+	if s.unknown == nil {
+		s.unknown = make(map[string]struct{}, unknownHostLogLimit)
+	}
+	if _, ok := s.unknown[host]; ok {
+		return
+	}
+	if len(s.unknown) >= unknownHostLogLimit {
+		return
+	}
+	s.unknown[host] = struct{}{}
+	s.log.Warn("请求的 Host 没有对应挂载点",
+		"host", host,
+		"hint", "如果这是改掉的旧域名，记得删除 Cloudflare 的 DNS 记录与隧道 ingress")
 }
 
 func (s *Server) render(w http.ResponseWriter, r *http.Request, name string, v view) {

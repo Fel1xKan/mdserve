@@ -25,6 +25,7 @@ import (
 	"github.com/Fel1xKan/mdserve/internal/auth"
 	"github.com/Fel1xKan/mdserve/internal/buildinfo"
 	"github.com/Fel1xKan/mdserve/internal/config"
+	"github.com/Fel1xKan/mdserve/internal/hoststate"
 	"github.com/Fel1xKan/mdserve/internal/httpapi"
 	"github.com/Fel1xKan/mdserve/internal/site"
 	"github.com/Fel1xKan/mdserve/internal/tunnel"
@@ -260,6 +261,7 @@ func cmdServe(args []string) error {
 	}
 
 	printBanner(os.Stdout, cfg, eff.File, port, set, tp)
+	noteHostChanges(log, cfg, reg)
 
 	go func() {
 		<-ctx.Done()
@@ -361,6 +363,23 @@ func isLoopbackHost(host string) bool {
 	}
 	ip := net.ParseIP(host)
 	return ip != nil && ip.IsLoopback()
+}
+
+// noteHostChanges 比较上次启动的域名集合，提示被改掉的旧域名。
+// 只提示、不清理：mdserve 不持有 Cloudflare 凭据，也不知道那边还留着什么，
+// 自动删 DNS 或 ingress 的风险远大于让用户自己删。
+func noteHostChanges(log *slog.Logger, cfg config.Config, reg *site.Registry) {
+	path := filepath.Join(cfg.Auth.StateDir, "hosts.json")
+	prev := hoststate.Load(path)
+	cur := reg.Hosts()
+	if gone := hoststate.Removed(prev.Hosts, cur); len(gone) > 0 {
+		log.Warn("旧域名已不在配置中",
+			"hosts", strings.Join(gone, ", "),
+			"hint", "Cloudflare 上的 DNS 记录与隧道 ingress 不会自动消失，需要手动删除")
+	}
+	if err := hoststate.Save(path, cur); err != nil {
+		log.Warn("记录域名快照失败", "path", path, "err", err)
+	}
 }
 
 func printBanner(w *os.File, cfg config.Config, configFile string, port int, set *auth.Set, tp tunnel.Provider) {

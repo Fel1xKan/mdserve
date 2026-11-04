@@ -89,6 +89,23 @@ Omitting `auth` generates a 20-character password on first start, stores it in
 
 `--password-file` applies a single file to every mount that has no `auth` block of its own.
 
+### Renaming a host
+
+`mounts[].host` is the source of truth for routing, but Cloudflare keeps its own copy: the
+DNS record and the tunnel ingress rule. Changing the host in YAML does not touch either, so
+the old name keeps resolving and starts returning `421`.
+
+mdserve remembers the hostnames it served in `<state_dir>/hosts.json`. On the next start it
+warns once about names that disappeared:
+
+```
+level=WARN msg=旧域名已不在配置中 hosts=old.example.com
+```
+
+It never edits Cloudflare. Remove the old DNS record and ingress rule yourself, then restart
+to refresh the snapshot. The same warning fires at runtime (once per host) if traffic still
+arrives for a name no mount claims.
+
 ## auth
 
 | Key | Default | Meaning |

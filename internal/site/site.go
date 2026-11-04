@@ -482,6 +482,25 @@ func (r *Registry) Default() *Mount { return r.def }
 // Mounts 返回全部挂载点。
 func (r *Registry) Mounts() []*Mount { return r.mounts }
 
+// Hosts 返回配置里的域名集合，已排序去重。默认站点（空 host）不计入。
+func (r *Registry) Hosts() []string {
+	seen := make(map[string]struct{}, len(r.mounts))
+	out := make([]string, 0, len(r.mounts))
+	for _, m := range r.mounts {
+		h := normalizeHost(m.Host)
+		if h == "" {
+			continue
+		}
+		if _, ok := seen[h]; ok {
+			continue
+		}
+		seen[h] = struct{}{}
+		out = append(out, h)
+	}
+	sort.Strings(out)
+	return out
+}
+
 // Start 为所有挂载点启动后台重建。
 func (r *Registry) Start(ctx context.Context) {
 	for _, m := range r.mounts {

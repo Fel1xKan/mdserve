@@ -1,7 +1,9 @@
 package httpapi
 
 import (
+	"bytes"
 	"compress/gzip"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -283,15 +285,58 @@ func TestUnknownHostGets421(t *testing.T) {
 	}
 }
 
-func TestAboutRequiresAuth(t *testing.T) {
+func TestTreeTogglesAndShowsIndex(t *testing.T) {
 	e := newTestEnv(t, "", "")
-	if w := e.do(t, http.MethodGet, "/-/about", "", nil, nil); w.Code != http.StatusSeeOther {
-		t.Fatalf("未登录 about = %d", w.Code)
-	}
 	cookies := e.login(t, "")
-	w := e.do(t, http.MethodGet, "/-/about", "", nil, cookies)
+	w := e.do(t, http.MethodGet, "/", "", nil, cookies)
+	body := w.Body.String()
+
+	// 目录行整行可点：role=button + aria-expanded，名字不再是链接。
+	if !strings.Contains(body, `class="node-label" role="button" tabindex="0" aria-expanded=`) {
+		t.Fatal("目录行应可点击（role=button + aria-expanded）")
+	}
+	if strings.Contains(body, `class="node-label" role="button" tabindex="0" aria-expanded="true"><a`) {
+		t.Fatal("目录名不应再是链接，否则点击会跳页而不是展开")
+	}
+	// 有首页的目录把首页渲染成第一个子项「概述」，链接到目录地址。
+	if !strings.Contains(body, `href="/guide/" title="guide/README.md">概述</a>`) {
+		t.Fatalf("目录首页应渲染成子项「概述」：%s", body)
+	}
+}
+
+func TestUnknownHostWarnsOnce(t *testing.T) {
+	e := newTestEnv(t, "", "docs.example.com")
+	var buf bytes.Buffer
+	e.srv.log = slog.New(slog.NewTextHandler(&buf, nil))
+
+	for i := 0; i < 3; i++ {
+		if w := e.do(t, http.MethodGet, "/", "old.example.com", nil, nil); w.Code != http.StatusMisdirectedRequest {
+			t.Fatalf("状态码 = %d，想要 421", w.Code)
+		}
+	}
+	if n := strings.Count(buf.String(), "old.example.com"); n != 1 {
+		t.Fatalf("同一个未知 Host 应只告警一次，实际 %d 次：\n%s", n, buf.String())
+	}
+}
+
+func TestUnknownHostWarnLimit(t *testing.T) {
+	e := newTestEnv(t, "", "docs.example.com")
+	var buf bytes.Buffer
+	e.srv.log = slog.New(slog.NewTextHandler(&buf, nil))
+
+	for i := 0; i < unknownHostLogLimit+5; i++ {
+		e.do(t, http.MethodGet, "/", fmt.Sprintf("h%d.example.com", i), nil, nil)
+	}
+	if n := strings.Count(buf.String(), "没有对应挂载点"); n != unknownHostLogLimit {
+		t.Fatalf("告警条数 = %d，想要 %d", n, unknownHostLogLimit)
+	}
+}
+
+func TestAboutIsPublic(t *testing.T) {
+	e := newTestEnv(t, "", "")
+	w := e.do(t, http.MethodGet, "/-/about", "", nil, nil)
 	if w.Code != http.StatusOK {
-		t.Fatalf("登录后 about = %d", w.Code)
+		t.Fatalf("未登录 about = %d，想要 200", w.Code)
 	}
 	if !strings.Contains(w.Body.String(), "test-1.0") {
 		t.Fatal("关于页应显示版本")
@@ -423,11 +468,12 @@ func TestAssetVersionInHTML(t *testing.T) {
 	cookies := e.login(t, "")
 	w := e.do(t, http.MethodGet, "/", "", nil, cookies)
 	body := w.Body.String()
-	if !strings.Contains(body, "/vendor/app.css?v=") {
-		t.Fatal("样式表链接应带版本号")
+	// 注意要连 -/ 前缀一起断言：少了它页面会去请求 /vendor/...，而路由在 /-/vendor/。
+	if !strings.Contains(body, "/-/vendor/app.css?v=") {
+		t.Fatal("样式表链接应指向 /-/vendor/ 并带版本号")
 	}
-	if !strings.Contains(body, "/vendor/app.js?v=") {
-		t.Fatal("脚本链接应带版本号")
+	if !strings.Contains(body, "/-/vendor/app.js?v=") {
+		t.Fatal("脚本链接应指向 /-/vendor/ 并带版本号")
 	}
 }
 
