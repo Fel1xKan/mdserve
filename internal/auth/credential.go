@@ -100,7 +100,7 @@ func readCredential(path string) (Credential, error) {
 	if st.IsDir() {
 		return Credential{}, fmt.Errorf("口令文件 %s 是目录", path)
 	}
-	if perm := st.Mode().Perm(); perm&0o007 != 0 {
+	if perm := st.Mode().Perm(); permEnforced && perm&0o007 != 0 {
 		return Credential{}, fmt.Errorf("口令文件 %s 权限为 %04o，其他用户可访问；请 chmod 600", path, perm)
 	}
 	b, err := os.ReadFile(path)

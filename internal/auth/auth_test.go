@@ -171,7 +171,7 @@ func TestResolveCredentialGeneratesAndReuses(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if perm := st.Mode().Perm(); perm != 0o600 {
+	if perm := st.Mode().Perm(); permEnforced && perm != 0o600 {
 		t.Fatalf("生成文件权限 = %04o，想要 0600", perm)
 	}
 
@@ -188,6 +188,9 @@ func TestResolveCredentialGeneratesAndReuses(t *testing.T) {
 }
 
 func TestResolveCredentialRejectsLoosePerms(t *testing.T) {
+	if !permEnforced {
+		t.Skip("Windows 用 ACL 控制访问，没有 Unix 权限位可检查")
+	}
 	dir := t.TempDir()
 	p := filepath.Join(dir, "pass")
 	if err := os.WriteFile(p, []byte("hunter2\n"), 0o644); err != nil {

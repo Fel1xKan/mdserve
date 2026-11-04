@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -79,8 +80,15 @@ func RotateEpoch(path string) (string, error) {
 	return v, nil
 }
 
+// permEnforced 报告当前平台是否支持 Unix 权限位。Windows 用 ACL 控制访问，
+// Stat 返回的 mode 只是只读属性的映射（总是 0666 或 0444），检查它没有意义。
+const permEnforced = runtime.GOOS != "windows"
+
 // checkPerm 拒绝其他用户可读写的密钥文件。文件不存在不算错。
 func checkPerm(path string) error {
+	if !permEnforced {
+		return nil
+	}
 	st, err := os.Stat(path)
 	if err != nil {
 		return nil
