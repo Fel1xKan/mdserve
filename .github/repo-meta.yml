@@ -1,0 +1,21 @@
+---
+description: >
+  Turn a folder of Markdown into a password-protected website. One binary, no build step,
+  no database. Hostname-routed multi-site, one-time share codes, optional Cloudflare tunnel.
+topics:
+  - markdown
+  - documentation
+  - static-site
+  - self-hosted
+  - golang
+  - cli
+  - http-server
+  - markdown-to-html
+  - cloudflare-tunnel
+  - password-protection
+  - single-binary
+  - developer-tools
+  - docs
+  - self-hosted-docs
+  - web-server
+homepage: ""

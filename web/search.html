@@ -1,0 +1,50 @@
+{{define "search"}}<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>检索 · {{.Product}}</title>
+<link rel="stylesheet" href="{{.Base}}/vendor/app.css?v={{.Asset}}" />
+<style>
+  body { margin: 0; padding: 48px 20px; }
+  .wrap { width: min(100%, 820px); margin: 0 auto; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  p.sub { color: var(--text-dim); font-size: 13px; margin: 0 0 24px; }
+  form { display: flex; gap: 8px; margin-bottom: 28px; }
+  input[type=search] { flex: 1; padding: 10px 12px; border-radius: 9px; border: 1px solid var(--line);
+                       background: var(--bg-soft); color: var(--text); font-size: 14px; }
+  button { padding: 10px 16px; border-radius: 9px; border: 1px solid #2f4a72; background: #1b2a45;
+           color: var(--text); cursor: pointer; }
+  .hit { border-bottom: 1px solid var(--line); padding: 14px 0; }
+  .hit a { font-size: 14.5px; }
+  .hit .path { color: var(--text-dim); font-size: 12px; margin-left: 8px; }
+  .hit pre { margin: 8px 0 0; white-space: pre-wrap; word-break: break-word;
+             font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px;
+             color: var(--text-dim); line-height: 1.7; }
+  .hit .ln { color: #64748b; margin-right: 8px; }
+  .empty { color: var(--text-dim); font-size: 13.5px; }
+  .foot { margin-top: 28px; font-size: 12.5px; color: var(--text-dim); display: flex; gap: 16px; }
+  .foot a { color: var(--text-dim); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>全文检索</h1>
+  <p class="sub">{{if .Query}}「{{.Query}}」· {{.Count}} 篇命中{{else}}至少输入 2 个字{{end}}</p>
+  <form method="get" action="{{.Base}}/search">
+    <input type="search" name="q" value="{{.Query}}" placeholder="关键词" autofocus />
+    <button type="submit">检索</button>
+  </form>
+  {{if not .Results}}<p class="empty">{{if .Query}}没有命中。{{else}}试试更具体的关键词。{{end}}</p>{{end}}
+  {{range .Results}}
+  <div class="hit">
+    <a href="{{$.Base}}/{{.Path}}">{{.Title}}</a><span class="path">{{.Path}}</span>
+    <pre>{{range .Hits}}<span class="ln">{{.Line}}</span>{{.Text}}
+{{end}}</pre>
+  </div>
+  {{end}}
+  <div class="foot"><a href="{{.Base}}/">返回文档</a><a href="{{.Base}}/-/about">关于</a><span>v{{.Version}}</span></div>
+</div>
+</body>
+</html>{{end}}

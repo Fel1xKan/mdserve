@@ -1,0 +1,18 @@
+{{define "mermaid_frame"}}<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<style>
+  html, body { margin: 0; padding: 0; background: transparent; }
+  #out { padding: 4px; }
+  #out svg { display: block; max-width: 100%; height: auto; }
+  .err { margin: 0; font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+         color: #fca5a5; white-space: pre-wrap; word-break: break-word; }
+</style>
+</head>
+<body>
+<div id="out"></div>
+<script src="{{.Base}}/vendor/mermaid.min.js?v={{.Asset}}"></script>
+<script src="{{.Base}}/vendor/mermaid-frame.js?v={{.Asset}}"></script>
+</body>
+</html>{{end}}

@@ -1,0 +1,60 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: 测试
+        run: go test ./...
+
+      # 发布说明来自 CHANGELOG：缺段落时 release 页面会是空的，
+      # 所以宁可在发布前失败。
+      - name: 校验 CHANGELOG
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          if ! grep -q "## \[${version}\]" CHANGELOG.md; then
+            echo "::error::CHANGELOG.md 缺少 ${version} 段落"
+            exit 1
+          fi
+
+      # CGO_ENABLED=0 交叉编译，macOS 产物在 ubuntu runner 上产出。
+      - name: 发布
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: "~> v2"
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 显式确认六个平台都在，避免 goos/goarch 漏配后静默发一个残缺 release。
+      - name: 校验产物
+        run: |
+          set -euo pipefail
+          ls -la dist
+          platforms="linux-amd64 linux-arm64 darwin-amd64 darwin-arm64"
+          platforms="$platforms windows-amd64 windows-arm64"
+          for platform in $platforms; do
+            if ! ls dist/mdserve-*-"$platform"* >/dev/null 2>&1; then
+              echo "::error::缺少 $platform 产物"
+              exit 1
+            fi
+          done

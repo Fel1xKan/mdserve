@@ -1,0 +1,6 @@
+# goreleaser 的 ldflags / name_template 需要完整模块路径，
+# 无法压到 80 列以内，这里放宽到 100。
+extends: default
+rules:
+  line-length:
+    max: 100

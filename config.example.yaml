@@ -1,0 +1,115 @@
+# mdserve 配置示例
+#
+# 优先级：命令行 > 环境变量 > 本文件 > 内置默认值。
+# 标量覆盖；allow_ext / exclude / hidden 追加；mounts 整体替换。
+# 拼错的键名会让启动直接失败（KnownFields），避免"改了没生效"。
+#
+# 口令只从 password_file / password_hash 读取，不接受明文或环境变量。
+
+version: 1
+
+server:
+  # 只绑回环，对外交给隧道。改成非回环地址时必须同时配置 public_url，
+  # 否则启动会被拒绝。
+  listen: 127.0.0.1:8787
+
+  # 对外访问地址，用于生成分享链接和判断 cookie 是否加 Secure。
+  public_url: ""
+
+  # 挂在域名子路径下时填写，例如 "/notes"。
+  # 所有站内链接、cookie 路径、静态资源都会自动带上这个前缀。
+  base_path: ""
+
+  # 目录树重建间隔。文件内容变化按 mtime 实时校验，这个值只影响新增/删除的可见延迟。
+  refresh: 10s
+
+  # 单文件最大字节数，超过直接 413。
+  max_file_bytes: 4194304
+
+  # 允许直出的静态资源后缀（不含 html/js）。svg 会强制 attachment + sandbox CSP。
+  allow_ext:
+    - .png
+    - .jpg
+    - .jpeg
+    - .gif
+    - .svg
+    - .webp
+    - .pdf
+
+  # 完全不出现在索引里的目录名或文件后缀。
+  exclude:
+    - .git
+    - node_modules
+    - .obsidian
+    - .idea
+    - .vscode
+
+  # 不显示在目录树、列表与搜索结果里，但知道路径仍可直接访问。
+  # 适合草稿：hidden: ["draft", "*.wip.md"]
+  hidden: []
+
+  language: zh
+
+  # debug / info / warn / error
+  log_level: info
+
+  # text / json。json 便于审计日志落盘后检索。
+  log_format: text
+
+mounts:
+  # 一个挂载点 = 一个域名 + 一个目录 + 一个口令。
+  # 想给不同受众看不同内容，用不同域名（浏览器按 host 隔离 cookie）。
+  - name: docs
+    host: docs.example.com
+    root: /srv/docs
+    auth:
+      # 二选一，优先 password_hash。
+      # 生成哈希：mdserve passwd
+      password_hash: ""
+      # 或者放一个 0600 的口令文件（内容可以是明文，也可以是哈希）。
+      password_file: ""
+
+  - name: handbook
+    host: handbook.example.com
+    root: /srv/handbook
+    auth:
+      password_file: /etc/mdserve/handbook.pass
+
+# 不写 mounts 时，默认把当前工作目录当作唯一站点，host 为空（任意 Host 都落到它）。
+# 此时口令会自动生成并保存到 state_dir/passwords/，首次启动打印一次。
+
+auth:
+  # HMAC 密钥，32 字节 hex。缺失时自动生成，权限 0600。
+  secret_file: ~/.config/mdserve/secret
+
+  # 存放 epoch 与自动生成的口令。
+  state_dir: ~/.local/state/mdserve
+
+  cookie_name: mdserve_s
+
+  # 会话绝对有效期与空闲有效期。
+  cookie_ttl: 8h
+  idle_ttl: 30m
+
+  # 一次性分享码的有效期（1m–24h）。
+  share_ttl: 1h
+
+  rate_limit:
+    attempts: 8
+    window: 10m
+    lockout: 10m
+
+tunnel:
+  # none / named。
+  mode: none
+  provider: cloudflared
+
+  # 只查 PATH 或绝对路径，不会在运行时下载。
+  binary: cloudflared
+
+  # named 模式二选一：token 文件（0600），或 cloudflared 自己的 config.yml。
+  token_file: ""
+  config: ""
+
+  # named 模式的对外域名。
+  hostname: ""

@@ -1,0 +1,31 @@
+{{define "notfound"}}<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>404 · {{.Product}}</title>
+<link rel="stylesheet" href="{{.Base}}/vendor/app.css?v={{.Asset}}" />
+<style>
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; }
+  .wrap { width: min(92vw, 480px); text-align: center; }
+  h1 { font-size: 52px; margin: 0; letter-spacing: .04em; color: #38bdf8; }
+  p { color: var(--text-dim); font-size: 14px; line-height: 1.8; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; color: var(--text); }
+  .foot { margin-top: 26px; font-size: 12.5px; color: var(--text-dim); display: flex; gap: 16px; justify-content: center; }
+  .foot a { color: var(--text-dim); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>404</h1>
+  <p>路径不存在：<code>{{.Path}}</code></p>
+  <div class="foot">
+    <span>v{{.Version}}</span>
+    <a href="{{.Repo}}">{{.RepoLabel}}</a>
+    <a href="{{.Base}}/">首页</a>
+    <a href="{{.Base}}/-/about">关于</a>
+  </div>
+</div>
+</body>
+</html>{{end}}

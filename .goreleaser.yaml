@@ -1,0 +1,49 @@
+version: 2
+
+project_name: mdserve
+
+builds:
+  - id: mdserve
+    main: .
+    binary: mdserve
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X github.com/Fel1xKan/mdserve/internal/buildinfo.Version={{.Version}}
+      - -X github.com/Fel1xKan/mdserve/internal/buildinfo.Commit={{.ShortCommit}}
+      - -X github.com/Fel1xKan/mdserve/internal/buildinfo.Date={{.Date}}
+
+# 直接发裸二进制，升级器按 mdserve-<version>-<os>-<arch> 找资产。
+# 命名与 buildinfo.Platform() 保持一致（Go 原生 GOOS-GOARCH）。
+archives:
+  - formats: [binary]
+    name_template: "{{.ProjectName}}-{{.Version}}-{{.Os}}-{{.Arch}}"
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+changelog:
+  use: github
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^chore:"
+      - "^test:"
+      - "^ci:"
+
+release:
+  draft: false
+  prerelease: auto
+  footer: |
+    单文件二进制，下载后 `chmod +x` 即可运行。
+    版本：`mdserve version --json`

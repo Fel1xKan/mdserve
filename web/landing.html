@@ -1,0 +1,42 @@
+{{define "landing"}}<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>{{.Product}}</title>
+<link rel="stylesheet" href="{{.Base}}/vendor/app.css?v={{.Asset}}" />
+<style>
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; }
+  .wrap { width: min(92vw, 560px); }
+  .logo { font-size: 15px; letter-spacing: .14em; text-transform: uppercase; color: var(--text-dim); }
+  h1 { font-size: 30px; margin: 10px 0 14px; }
+  p.lead { color: var(--text-dim); line-height: 1.85; font-size: 14.5px; margin: 0 0 22px; }
+  ul.feat { list-style: none; padding: 0; margin: 0 0 26px; color: var(--text-dim); font-size: 14px; line-height: 2; }
+  ul.feat li::before { content: "·"; color: #38bdf8; margin-right: 10px; }
+  code, .cmd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+  .cmd { display: block; background: var(--bg-soft); border: 1px solid var(--line); border-radius: 10px;
+         padding: 12px 14px; color: var(--text); margin-bottom: 10px; }
+  .foot { margin-top: 26px; font-size: 12.5px; color: var(--text-dim); display: flex; gap: 16px; }
+  .foot a { color: var(--text-dim); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">mdserve</div>
+  <h1>把 markdown 目录变成可分享的网页</h1>
+  <p class="lead">当前目录还没有 markdown 文件，放一篇 README.md 进来即可。</p>
+  <ul class="feat">
+    <li>口令保护与一次性分享码</li>
+    <li>目录树、全文检索、表格与任务列表</li>
+    <li>mermaid 图表，本地渲染，不依赖 CDN</li>
+  </ul>
+  <code class="cmd">mdserve --help</code>
+  <div class="foot">
+    <span>v{{.Version}}</span>
+    <a href="{{.Repo}}">{{.RepoLabel}}</a>
+    <a href="{{.Base}}/-/about">关于</a>
+  </div>
+</div>
+</body>
+</html>{{end}}

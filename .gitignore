@@ -1,0 +1,12 @@
+# 编译产物
+/mdserve
+/mdserve.exe
+/dist/
+*.test
+*.out
+
+# 本地运行时生成
+/mdserve.yaml
+/mdserve.yml
+.DS_Store
+Thumbs.db
