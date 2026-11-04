@@ -166,12 +166,8 @@
   #toc a { color: var(--text-dim); }
   #toc a:hover { color: var(--accent); }
 
-  /* 目录名做成链接时也要能省略超长名字 */
-  .tree .node-dir > .node-label > a {
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
-    color: inherit;
-  }
-  .tree .node-dir > .node-label > a:hover { color: var(--accent); text-decoration: none; }
+  .node-dir > .node-label:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 1px; }
 
   /* ---------- 目录列表页 ---------- */
   .listing { list-style: none; padding: 0; margin: 20px 0 0; }

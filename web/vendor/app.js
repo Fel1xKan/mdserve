@@ -22,15 +22,21 @@
     document.body.classList.toggle('nav-open');
   });
 
-  // 目录树：点箭头折叠，点目录名进入该目录（有首页时）。
+  // 目录树：整行都可以展开/折叠，目录首页作为子项「概述」出现在下面。
   document.querySelectorAll('.node-dir > .node-label').forEach(function (label) {
     var dir = label.parentElement;
-    var hasLink = !!label.querySelector('a');
+    function toggle() {
+      var collapsed = dir.classList.toggle('collapsed');
+      label.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    }
     label.addEventListener('click', function (e) {
-      var onCaret = e.target.classList && e.target.classList.contains('caret');
-      if (onCaret || !hasLink) {
+      e.preventDefault();
+      toggle();
+    });
+    label.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        dir.classList.toggle('collapsed');
+        toggle();
       }
     });
   });

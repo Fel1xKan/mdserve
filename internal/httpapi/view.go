@@ -55,8 +55,9 @@ var indexNames = map[string]bool{
 }
 
 // treeHTML 渲染侧边栏目录树。
-// 当前文档路径上的目录默认展开，其余折叠；目录自身有首页时，
-// 目录名变成链接，首页文件不再单独出现。
+// 当前文档路径上的目录默认展开，其余折叠。点目录行只负责展开/折叠，
+// 目录首页作为第一个子项出现（「概述」），避免「点名字就跳走」和
+// 「想展开却跳页」这两个动作抢同一次点击。
 func treeHTML(nodes []*site.Node, current, base string) template.HTML {
 	var b strings.Builder
 	b.WriteString(`<ul>`)
@@ -70,29 +71,34 @@ func writeTree(b *strings.Builder, nodes []*site.Node, current, base string) {
 	for _, n := range nodes {
 		if n.Type == "dir" {
 			idx := indexChild(n)
-			expanded := strings.HasPrefix(current, n.Path+"/")
+			// 目录页本身（/erp/）也要展开自己，所以 current 等于 n.Path 也算命中。
+			expanded := current == n.Path || strings.HasPrefix(current, n.Path+"/")
 			cls := "node-dir"
+			aria := "true"
 			if !expanded {
 				cls += " collapsed"
+				aria = "false"
 			}
-			fmt.Fprintf(b, `<li class="%s"><div class="node-label"><span class="caret">▼</span>`, cls)
-			if idx != nil {
-				fmt.Fprintf(b, `<a href="%s/%s/">%s</a>`, base, escapePath(n.Path), html.EscapeString(n.Name))
-			} else {
-				fmt.Fprintf(b, `<span>%s</span>`, html.EscapeString(n.Name))
-			}
-			b.WriteString(`</div>`)
+			fmt.Fprintf(b, `<li class="%s"><div class="node-label" role="button" tabindex="0" aria-expanded="%s">`+
+				`<span class="caret">▼</span><span class="node-name">%s</span></div>`,
+				cls, aria, html.EscapeString(n.Name))
 
-			var kids []*site.Node
-			for _, c := range n.Children {
-				if idx != nil && c == idx {
-					continue
-				}
-				kids = append(kids, c)
-			}
-			if len(kids) > 0 {
+			if len(n.Children) > 0 {
 				b.WriteString(`<ul>`)
-				writeTree(b, kids, current, base)
+				if idx != nil {
+					icl := "node-file"
+					if idx.Path == current || n.Path == current {
+						icl += " active"
+					}
+					fmt.Fprintf(b, `<li class="%s"><a href="%s/%s/" title="%s">概述</a></li>`,
+						icl, base, escapePath(n.Path), html.EscapeString(idx.Path))
+				}
+				for _, c := range n.Children {
+					if c == idx {
+						continue
+					}
+					writeTree(b, []*site.Node{c}, current, base)
+				}
 				b.WriteString(`</ul>`)
 			}
 			b.WriteString(`</li>`)
