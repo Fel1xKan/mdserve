@@ -103,19 +103,15 @@ func (s *Server) handleMermaid(w http.ResponseWriter, r *http.Request) {
 	writeHTML(w, r, http.StatusOK, buf.Bytes())
 }
 
-// handleAbout 需要登录。刻意只显示版本信息，不暴露根目录、配置路径、
-// 主机名等本地细节。
+// handleAbout 不要求登录：登录页的「关于」链接指向这里，要求口令会把人挡在门外。
+// 它刻意只显示版本信息，不暴露根目录、配置路径、主机名等本地细节。
 func (s *Server) handleAbout(w http.ResponseWriter, r *http.Request) {
 	if !allowGet(w, r) {
 		return
 	}
-	_, sc, ok := s.mountFor(r)
-	if !ok {
+	// 仍然校验 Host：未知域名不该因为一个公开页面就变得可访问。
+	if _, _, ok := s.mountFor(r); !ok {
 		s.renderStatus(w, r, http.StatusMisdirectedRequest, "notfound", view{Title: "421", Path: r.URL.Path})
-		return
-	}
-	if !sc.Authed(r) {
-		s.redirect(w, r, s.loginURL(requestURI(r)), http.StatusSeeOther)
 		return
 	}
 	s.render(w, r, "about", view{

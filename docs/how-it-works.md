@@ -97,7 +97,7 @@ documents is never shadowed.
 | `/-/mermaid` | public | Empty sandbox page that renders diagrams via `postMessage`. |
 | `/-/login` | public | Login form. |
 | `/-/logout` | session | POST only. |
-| `/-/about` | session | Version, commit, build date, uptime. |
+| `/-/about` | public | Version, commit, build date, uptime. |
 | `/search?q=` | session | Full-text search. |
 
 ## Limits
