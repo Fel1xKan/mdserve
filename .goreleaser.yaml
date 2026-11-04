@@ -31,13 +31,10 @@ checksum:
   name_template: checksums.txt
   algorithm: sha256
 
+# 发布说明来自 CHANGELOG.md（由 workflow 通过 --release-notes 传入），
+# 不再让 goreleaser 拼 commit 列表。
 changelog:
-  use: github
-  sort: asc
-  filters:
-    exclude:
-      - "^docs:"
-      - "^chore:"
+  disable: true
       - "^test:"
       - "^ci:"
 
